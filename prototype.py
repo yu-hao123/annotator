@@ -21,11 +21,14 @@ class PlotWindow(QtWidgets.QWidget):
         self.time, self.flow, self.pressure, self.volume, self.pmus, self.ref = self.load_data('coletapcv_adequate.csv')
         self.ins_marks, self.exp_marks = retrieve_parity_marks(self.volume * 10)
 
-        plot_layout = QtWidgets.QVBoxLayout()
+        pg_layout = pg.GraphicsLayoutWidget()
 
-        self.plot1 = pg.PlotWidget(title="Pressure")
-        self.plot2 = pg.PlotWidget(title="Flow")
-        self.plot3 = pg.PlotWidget(title="Volume")
+        plot_layout = QtWidgets.QVBoxLayout()
+        plot_layout.addWidget(pg_layout)
+
+        self.plot1 = pg_layout.addPlot(row=0, col=0)
+        self.plot2 = pg_layout.addPlot(row=1, col=0)
+        self.plot3 = pg_layout.addPlot(row=2, col=0)
 
         self.plot1.showGrid(x=True, y=True)
         self.plot2.showGrid(x=True, y=True)
@@ -33,10 +36,6 @@ class PlotWindow(QtWidgets.QWidget):
 
         self.plot2.setXLink(self.plot1)
         self.plot3.setXLink(self.plot1)
-
-        plot_layout.addWidget(self.plot1)
-        plot_layout.addWidget(self.plot2)
-        plot_layout.addWidget(self.plot3)
 
         button_layout = QtWidgets.QVBoxLayout()
         self.zoom_in_button = QtWidgets.QPushButton("Zoom In")
@@ -48,7 +47,7 @@ class PlotWindow(QtWidgets.QWidget):
         button_layout.addWidget(self.smooth_button)
         button_layout.addStretch()  # Add stretch to push buttons to the top
 
-        # horizontal layout to contain both plot layout and button layout
+        # horizontal layout to contain both plot and button layout
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addLayout(plot_layout)
         main_layout.addLayout(button_layout)
@@ -57,6 +56,20 @@ class PlotWindow(QtWidgets.QWidget):
 
         self.plot_data()
         self.add_marks()
+
+        self.selection1 = pg.LinearRegionItem(movable=False)
+        self.selection2 = pg.LinearRegionItem(movable=False)
+        self.selection3 = pg.LinearRegionItem(movable=False)
+
+        self.plot1.addItem(self.selection1)
+        self.plot2.addItem(self.selection2)
+        self.plot3.addItem(self.selection3)
+
+        # Select initial region
+        self.update_selected_cycle(0)
+        self.plot1.scene().sigMouseClicked.connect(self.on_click)
+        self.link_selections([self.selection1, self.selection2, self.selection3])
+
 
     def load_data(self, filename):
         time = []
@@ -86,8 +99,39 @@ class PlotWindow(QtWidgets.QWidget):
     def add_marks(self):
         # Add vertical lines for ins_marks and exp_marks on Volume plot
         for mark in self.ins_marks:
-            line = pg.InfiniteLine(pos=self.time[mark], angle=90, movable=False, pen=pg.mkPen('r', width=2, style=pg.QtCore.Qt.DotLine))
+            line = pg.InfiniteLine(
+                pos=self.time[mark],
+                angle=90,
+                movable=False,
+                pen=pg.mkPen('r', width=2, style=pg.QtCore.Qt.DotLine)
+            )
             self.plot2.addItem(line)
+
+    def update_selected_cycle(self, index):
+        if index < len(self.ins_marks) - 1:
+            region = [self.time[self.ins_marks[index]], self.time[self.ins_marks[index + 1]]]
+            self.selection1.setRegion(region)
+            self.selection2.setRegion(region)
+            self.selection3.setRegion(region)
+
+    def on_click(self, event):
+        mouse_point = self.plot1.vb.mapSceneToView(event.scenePos())
+        x = mouse_point.x()
+        for i in range(len(self.ins_marks) - 1):
+            if self.time[self.ins_marks[i]] <= x <= self.time[self.ins_marks[i + 1]]:
+                self.update_selected_cycle(i)
+                break
+
+    def link_selections(self, regions):
+        def updateOtherRegions(region):
+            edges = region.getRegion()
+            for other in regions:
+                if other != region:
+                    other.setRegion(edges)
+
+        for region in regions:
+            region.sigRegionChanged.connect(updateOtherRegions)
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
