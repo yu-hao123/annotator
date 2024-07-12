@@ -159,6 +159,10 @@ class PlotWindow(QtWidgets.QWidget):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        with open('style.qss', 'r') as file:
+            style_sheet = file.read()
+            self.setStyleSheet(style_sheet)
+
         self.setWindowTitle("Waveform Viewer")
         self.setGeometry(100, 100, 1366, 768)
 
