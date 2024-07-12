@@ -54,9 +54,9 @@ class PlotWindow(QtWidgets.QWidget):
         button_layout.addWidget(self.early_cycling_button)
         button_layout.addStretch()  # push buttons to the top
 
-        self.double_trigger_button.toggled.connect(self.update_button_state)
-        self.reverse_trigger_button.toggled.connect(self.update_button_state)
-        self.early_cycling_button.toggled.connect(self.update_button_state)
+        self.double_trigger_button.clicked.connect(self.update_button_state)
+        self.reverse_trigger_button.clicked.connect(self.update_button_state)
+        self.early_cycling_button.clicked.connect(self.update_button_state)
 
         # horizontal layout to contain both plot and button layout
         main_layout = QtWidgets.QHBoxLayout()
