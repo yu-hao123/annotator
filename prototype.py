@@ -4,6 +4,7 @@ import csv
 from PyQt5 import QtWidgets, QtCore
 import pyqtgraph as pg
 import numpy as np
+import pandas as pd
 from utils import retrieve_parity_marks
 
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
@@ -44,19 +45,27 @@ class PlotWindow(QtWidgets.QWidget):
         self.double_trigger_button = QtWidgets.QPushButton("Double Trigger")
         self.reverse_trigger_button = QtWidgets.QPushButton("Reverse Trigger")
         self.early_cycling_button = QtWidgets.QPushButton("Early Cycling")
+        self.late_cycling_button = QtWidgets.QPushButton("Late Cycling")
+        self.ineffective_effort_button = QtWidgets.QPushButton("Ineffective Effort")
 
         self.double_trigger_button.setCheckable(True)
         self.reverse_trigger_button.setCheckable(True)
         self.early_cycling_button.setCheckable(True)
+        self.late_cycling_button.setCheckable(True)
+        self.ineffective_effort_button.setCheckable(True)
 
         button_layout.addWidget(self.double_trigger_button)
         button_layout.addWidget(self.reverse_trigger_button)
         button_layout.addWidget(self.early_cycling_button)
+        button_layout.addWidget(self.late_cycling_button)
+        button_layout.addWidget(self.ineffective_effort_button)
         button_layout.addStretch()  # push buttons to the top
 
         self.double_trigger_button.clicked.connect(self.update_button_state)
         self.reverse_trigger_button.clicked.connect(self.update_button_state)
         self.early_cycling_button.clicked.connect(self.update_button_state)
+        self.late_cycling_button.clicked.connect(self.update_button_state)
+        self.ineffective_effort_button.clicked.connect(self.update_button_state)
 
         # horizontal layout to contain both plot and button layout
         main_layout = QtWidgets.QHBoxLayout()
@@ -108,6 +117,7 @@ class PlotWindow(QtWidgets.QWidget):
         self.plot3.plot(self.time, self.volume, pen=pg.mkPen([200, 200, 200], width=1))
 
     def add_marks(self):
+        """
         # add vertical lines for ins_marks and exp_marks on flow plot
         for mark in self.ins_marks:
             line = pg.InfiniteLine(
@@ -117,6 +127,27 @@ class PlotWindow(QtWidgets.QWidget):
                 pen=pg.mkPen('y', width=1, style=pg.QtCore.Qt.DotLine)
             )
             self.plot2.addItem(line)
+        """
+
+        ins_markers_p2 = pg.ScatterPlotItem(
+            x=self.time[self.ins_marks],
+            y=self.flow[self.ins_marks],
+            symbol='t1',
+            pen='y',
+            brush='y',
+            size=8
+        )
+        exp_markers_p2 = pg.ScatterPlotItem(
+            x=self.time[self.exp_marks],
+            y=self.flow[self.exp_marks],
+            symbol='t',
+            pen='y',
+            brush='y',
+            size=8
+        )
+        self.plot2.addItem(ins_markers_p2)
+        self.plot2.addItem(exp_markers_p2)
+
 
     def update_selected_cycle(self, index):
         self.current_cycle_index = index
@@ -130,6 +161,8 @@ class PlotWindow(QtWidgets.QWidget):
         self.double_trigger_button.setChecked(self.button_states[index].get('double_trigger', False))
         self.reverse_trigger_button.setChecked(self.button_states[index].get('reverse_trigger', False))
         self.early_cycling_button.setChecked(self.button_states[index].get('early_cycling', False))
+        self.late_cycling_button.setChecked(self.button_states[index].get('late_cycling', False))
+        self.ineffective_effort_button.setChecked(self.button_states[index].get('ineffective_effort', False))
 
     def on_click(self, event):
         mouse_point = self.plot1.vb.mapSceneToView(event.scenePos())
@@ -153,7 +186,9 @@ class PlotWindow(QtWidgets.QWidget):
         self.button_states[self.current_cycle_index] = {
             'double_trigger': self.double_trigger_button.isChecked(),
             'reverse_trigger': self.reverse_trigger_button.isChecked(),
-            'early_cycling': self.early_cycling_button.isChecked()
+            'early_cycling': self.early_cycling_button.isChecked(),
+            'late_cycling': self.late_cycling_button.isChecked(),
+            'ineffective_effort': self.ineffective_effort_button.isChecked()
         }
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -164,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setStyleSheet(style_sheet)
 
         self.setWindowTitle("Waveform Viewer")
-        self.setGeometry(100, 100, 1366, 768)
+        self.setGeometry(100, 100, 1600, 900)
 
         self.plot_window = PlotWindow()
         self.setCentralWidget(self.plot_window)
