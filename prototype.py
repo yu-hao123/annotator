@@ -19,8 +19,24 @@ class PlotWindow(QtWidgets.QWidget):
         super().__init__()
 
         # Load data
-        self.time, self.flow, self.pressure, self.volume, self.pmus, self.ref = self.load_data('coletapcv_adequate.csv')
-        self.ins_marks, self.exp_marks = retrieve_parity_marks(self.volume * 10)
+        #self.time, self.flow, self.pressure, self.volume, self.pmus, self.ref = self.load_data('coletapcv_adequate.csv')
+        #self.ins_marks, self.exp_marks = retrieve_parity_marks(self.volume * 10)
+
+        full_df = pd.read_csv('c01r10c50.csv')
+        df = full_df.iloc[:60000]
+
+        self.time = df['time'].to_numpy()
+        self.time = self.time - self.time[0]
+        self.flow = df['flow'].to_numpy()
+        self.pressure = df['pressure'].to_numpy()
+        self.volume = df['volume'].to_numpy()
+        self.pmus = df['pmus'].to_numpy()
+        self.ref = df['ref'].to_numpy()
+        self.inspiration = df['inspiration'].to_numpy()
+        self.expiration = df['expiration'].to_numpy()
+
+        self.ins_marks =  np.where(self.inspiration == 1)[0]
+        self.exp_marks =  np.where(self.expiration == 1)[0]
 
         self.current_cycle_index = 0
         self.button_states = [{} for _ in range(len(self.ins_marks))]  # asynchrony states for each cycle
